@@ -13,7 +13,7 @@ set -euo pipefail
 # =============================================================================
 
 # ---- Constants ----------------------------------------------------------------
-VERSION="0.1.0"
+VERSION="0.1.1"
 GITHUB_API="https://api.github.com"
 GITHUB_TOKEN_URL="https://github.com/settings/tokens"
 GITLAB_HOST="gitlab.internal.sanger.ac.uk"

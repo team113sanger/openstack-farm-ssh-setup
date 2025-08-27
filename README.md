@@ -13,56 +13,18 @@ Automated VM onboarding helper that sets up SSH access, registers SSH keys with 
 4. Optionally sets up dotfiles with dotbot (if GitHub registration succeeds)
 5. Optionally installs R (via rig) and Python (via pyenv) versions from JSON config
 
-### Quick Start (Recommended)
+### Quick Start
 
 Download and run from GitHub releases:
 
 ```bash
+# Set some variables for convenience
+NEW_IP="172.27.21.59"
+NEW_HOST_ALIAS="iv3-dev-4"
+
 # Download latest stable release
 curl -LO https://github.com/team113sanger/openstack-farm-ssh-setup/releases/latest/download/new_openstack_host_setup.sh
-chmod +x new_openstack_host_setup.sh
 
 # Run with interactive prompts
-./new_openstack_host_setup.sh 172.27.21.59 iv3-dev-4
-
-# Or with dotfiles pre-specified (skips interactive prompt)
-./new_openstack_host_setup.sh 172.27.21.59 iv3-dev-4 --dotfiles git@github.com:user/dotfiles.git
-```
-
-### Download Other Versions
-
-```bash
-# Bleeding edge (canary from main branch)
-curl -O https://github.com/team113sanger/openstack-farm-ssh-setup/releases/download/canary/new_openstack_host_setup.sh
-
-# Specific version
-curl -O https://github.com/team113sanger/openstack-farm-ssh-setup/releases/download/0.5.0/new_openstack_host_setup.sh
-```
-
-### Non-Interactive Usage (Advanced)
-
-For automation where you want to skip all interactive prompts:
-
-```bash
-# Set environment variables to skip prompts
-export GITHUB_PAT="your_github_token"
-export GITLAB_PAT="your_gitlab_token" 
-export REMOTE_SSH_USER="ubuntu"
-
-# Run non-interactively
-curl -L https://github.com/team113sanger/openstack-farm-ssh-setup/releases/latest/download/new_openstack_host_setup.sh | bash -s -- 172.27.21.59 iv3-dev-4 --dotfiles git@github.com:user/dotfiles.git
-```
-
-
-### Command Line Options
-
-```bash
-# Show help
-./new_openstack_host_setup.sh --help
-
-# Basic usage
-./new_openstack_host_setup.sh <NEW-IP> <NEW-HOST-ALIAS>
-
-# With dotfiles (SSH URI format required)
-./new_openstack_host_setup.sh <NEW-IP> <NEW-HOST-ALIAS> --dotfiles git@github.com:user/dotfiles.git
+bash new_openstack_host_setup.sh $NEW_IP $NEW_HOST_ALIAS
 ```
