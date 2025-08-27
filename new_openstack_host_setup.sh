@@ -28,8 +28,8 @@ BACKUP_TS="$(date +%Y%m%d-%H%M%S)"
 
 # GitHub registration status flag
 GITHUB_KEY_REGISTERED=0
-# Dotfiles repository URI (optional)
-DOTFILES_URI=""
+# Dotfiles repository URL (optional)
+DOTFILES_URL=""
 # R/Python installation flags
 INSTALL_R_PYTHON=0
 VERSIONS_JSON_URL=""
@@ -60,7 +60,7 @@ print_usage() {
   echo ""
   echo "Options:"
   echo "  -h, --help            Show this help message and exit"
-  echo "  --dotfiles <uri>      SSH URI of dotfiles repository (git@host:user/repo.git)"
+  echo "  --dotfiles <uri>      SSH URL of dotfiles repository (git@host:user/repo.git)"
   echo "  --remote-user <user>  SSH username for the OpenStack instance (default: ${DEFAULT_REMOTE_SSH_USER})"
   echo "  --version             Show script version and exit"
   echo ""
@@ -150,17 +150,17 @@ parse_args() {
       --dotfiles)
         if [[ -n "$2" ]] && [[ ! "$2" =~ ^-- ]]; then
           if ! validate_dotfiles_uri "$2"; then
-            print_error "Invalid dotfiles URI format: '$2'"
+            print_error "Invalid dotfiles URL format: '$2'"
             print_error "Expected SSH format: git@github.com:user/repo.git or git@gitlab.host:user/repo.git"
             print_error "Examples:"
             print_error "  git@github.com:user/dotfiles.git"
             print_error "  git@gitlab.internal.sanger.ac.uk:user/dotfiles.git"
             exit 1
           fi
-          DOTFILES_URI="$2"
+          DOTFILES_URL="$2"
           shift 2
         else
-          print_error "Option --dotfiles requires a GitHub/GitLab SSH URI argument."
+          print_error "Option --dotfiles requires a GitHub/GitLab SSH URL argument."
           print_usage
           exit 1
         fi
@@ -454,8 +454,8 @@ prompt_for_dotfiles() {
     print_info "Attempting dotfiles setup (GitHub key registration succeeded)."
   fi
   
-  # If DOTFILES_URI was already provided via --dotfiles, no need to prompt
-  if [[ -n "${DOTFILES_URI}" ]]; then
+  # If DOTFILES_URL was already provided via --dotfiles, no need to prompt
+  if [[ -n "${DOTFILES_URL}" ]]; then
     return 0
   fi
   
@@ -463,14 +463,14 @@ prompt_for_dotfiles() {
   case "${response}" in
     [yY][eE][sS]|[yY])
       while true; do
-        read -r -p "Enter your dotfiles repository SSH URI (git@host:user/repo.git): " DOTFILES_URI
-        if [[ -z "${DOTFILES_URI}" ]]; then
-          print_info "No URI provided, skipping dotfiles setup."
+        read -r -p "Enter your dotfiles repository SSH URL (git@host:user/repo.git): " DOTFILES_URL
+        if [[ -z "${DOTFILES_URL}" ]]; then
+          print_info "No URL provided, skipping dotfiles setup."
           break
-        elif validate_dotfiles_uri "${DOTFILES_URI}"; then
+        elif validate_dotfiles_uri "${DOTFILES_URL}"; then
           break
         else
-          print_error "Invalid SSH URI format. Examples:"
+          print_error "Invalid SSH URL format. Examples:"
           print_error "  git@github.com:user/dotfiles.git"
           print_error "  git@gitlab.internal.sanger.ac.uk:user/dotfiles.git"
           echo "Press Enter to skip or try again:" >&2
@@ -519,11 +519,11 @@ remote_install_dotfiles() {
     return 0
   fi
   
-  if [[ -z "${DOTFILES_URI}" ]]; then
+  if [[ -z "${DOTFILES_URL}" ]]; then
     return 0
   fi
   
-  print_info "Installing dotfiles from ${DOTFILES_URI} on ${NEW_ALIAS}..."
+  print_info "Installing dotfiles from ${DOTFILES_URL} on ${NEW_ALIAS}..."
   
   # Run the dotfiles installation on the remote OpenStack instance
   ssh -o BatchMode=yes "${REMOTE_SSH_USER}@${NEW_IP}" bash -s <<EOF
@@ -534,7 +534,7 @@ if [[ -d "\${HOME}/dotfiles" ]]; then
   echo "Directory ~/dotfiles already exists, skipping clone."
 else
   echo "Cloning dotfiles repository..."
-  if ! git clone --recursive "${DOTFILES_URI}" "\${HOME}/dotfiles"; then
+  if ! git clone --recursive "${DOTFILES_URL}" "\${HOME}/dotfiles"; then
     echo "ERROR: Failed to clone dotfiles repository." >&2
     exit 1
   fi
