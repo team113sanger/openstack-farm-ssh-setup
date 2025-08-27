@@ -324,7 +324,7 @@ ensure_github_token() {
   print_post_script "Create a ${format_yellow}Personal access token (classic)${format_blue} with:"
   print_post_script "  • ${format_yellow}Type:${format_off} classic"
   print_post_script "  • ${format_yellow}Scope:${format_off} admin:public_key"
-  print_post_script "  • ${format_yellow}Expiration:${format_off} 7 days"
+  print_post_script "  • ${format_yellow}Expiration:${format_off} 30 days"
   print_post_script "  • ${format_yellow}Note/name:${format_off} 'OpenStack instance key upload (temporary)'"
   print_post_script "Open: ${format_yellow}${GITHUB_TOKEN_URL}${format_blue}"
   if command -v xdg-open >/dev/null 2>&1; then xdg-open "${GITHUB_TOKEN_URL}" >/dev/null 2>&1 || true
@@ -357,7 +357,7 @@ ensure_gitlab_token() {
   print_warning "GITLAB_PAT not set."
   print_post_script "Create a token on ${format_yellow}${GITLAB_HOST}${format_blue} with:"
   print_post_script "  • ${format_yellow}Scope:${format_off} api"
-  print_post_script "  • ${format_yellow}Expiration:${format_off} 7 days"
+  print_post_script "  • ${format_yellow}Expiration:${format_off} 30 days"
   print_post_script "  • ${format_yellow}Name:${format_off} 'OpenStack instance key upload (temporary)'"
   print_post_script "Open: ${format_yellow}${GITLAB_TOKEN_URL}${format_blue}"
   if command -v xdg-open >/dev/null 2>&1; then xdg-open "${GITLAB_TOKEN_URL}" >/dev/null 2>&1 || true
