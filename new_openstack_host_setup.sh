@@ -529,21 +529,56 @@ remote_install_dotfiles() {
   ssh -o BatchMode=yes "${REMOTE_SSH_USER}@${NEW_IP}" bash -s <<EOF
 set -euo pipefail
 
-# Clone the dotfiles repository
-if [[ -d "\${HOME}/dotfiles" ]]; then
-  echo "Directory ~/dotfiles already exists, skipping clone."
+# Function to find existing dotfiles directory by checking git remote URLs
+find_existing_dotfiles_dir() {
+  local target_url="\$1"
+  
+  # Look for directories in HOME that contain .git/config (non-recursive)
+  for dir in "\${HOME}"/*; do
+    if [[ -d "\$dir" && -f "\$dir/.git/config" ]]; then
+      # Extract remote URLs from git config
+      local remote_urls=\$(git -C "\$dir" remote get-url --all origin 2>/dev/null || true)
+      if [[ -n "\$remote_urls" ]]; then
+        # Check if any remote URL matches our target URL
+        while IFS= read -r url; do
+          if [[ "\$url" == "\$target_url" ]]; then
+            echo "\$(basename "\$dir")"
+            return 0
+          fi
+        done <<< "\$remote_urls"
+      fi
+    fi
+  done
+  return 1
+}
+
+# Determine the directory name to use
+DOTFILES_DIR="dotfiles"  # Default fallback
+if existing_dir=\$(find_existing_dotfiles_dir "${DOTFILES_URL}"); then
+  DOTFILES_DIR="\$existing_dir"
+  echo "Found existing dotfiles directory: ~/\$DOTFILES_DIR (matches git remote URL)"
+  echo "Removing existing directory for fresh clone..."
+  rm -rf "\${HOME}/\$DOTFILES_DIR"
 else
-  echo "Cloning dotfiles repository..."
-  if ! git clone --recursive "${DOTFILES_URL}" "\${HOME}/dotfiles"; then
-    echo "ERROR: Failed to clone dotfiles repository." >&2
-    exit 1
+  echo "No existing dotfiles directory found matching the git remote URL"
+  # Check if default "dotfiles" directory exists and remove it for fresh clone
+  if [[ -d "\${HOME}/dotfiles" ]]; then
+    echo "Removing existing ~/dotfiles directory for fresh clone..."
+    rm -rf "\${HOME}/dotfiles"
   fi
 fi
 
+# Clone the dotfiles repository
+echo "Cloning dotfiles repository to ~/\$DOTFILES_DIR..."
+if ! git clone --recursive "${DOTFILES_URL}" "\${HOME}/\$DOTFILES_DIR"; then
+  echo "ERROR: Failed to clone dotfiles repository." >&2
+  exit 1
+fi
+
 # Run dotbot
-if [[ -f "\${HOME}/dotfiles/install.conf.yaml" ]]; then
+if [[ -f "\${HOME}/\$DOTFILES_DIR/install.conf.yaml" ]]; then
   echo "Running dotbot..."
-  cd "\${HOME}/dotfiles"
+  cd "\${HOME}/\$DOTFILES_DIR"
   if [[ -x "./dotbot/bin/dotbot" ]]; then
     ./dotbot/bin/dotbot -c install.conf.yaml || {
       echo "WARNING: dotbot execution failed, but continuing." >&2
