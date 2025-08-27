@@ -20,28 +20,29 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Determine release type
-        id: release_type
-        run: |
-          if [[ $GITHUB_REF == refs/tags/* ]]; then
-            TAG_NAME=${GITHUB_REF#refs/tags/}
-            echo "type=tag" >> $GITHUB_OUTPUT
-            echo "name=${TAG_NAME}" >> $GITHUB_OUTPUT
-            echo "is_latest=true" >> $GITHUB_OUTPUT
-          else
-            echo "type=canary" >> $GITHUB_OUTPUT
-            echo "name=canary" >> $GITHUB_OUTPUT
-            echo "is_latest=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Create/Update Release
+      - name: Create Tagged Release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ steps.release_type.outputs.name }}
-          name: ${{ steps.release_type.outputs.type == 'tag' && format('Release {0}', steps.release_type.outputs.name) || 'Canary Build' }}
-          body: ${{ steps.release_type.outputs.type == 'tag' && format('Release {0}', steps.release_type.outputs.name) || format('Latest development build from commit {0}', github.sha) }}
-          prerelease: ${{ steps.release_type.outputs.type == 'canary' }}
-          make_latest: ${{ steps.release_type.outputs.is_latest }}
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: Release ${{ github.ref_name }}
+          prerelease: false
+          make_latest: true
+          files: |
+            new_openstack_host_setup.sh
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create/Update Canary Release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: canary
+          name: Canary Build
+          body: Latest development build from commit ${{ github.sha }}
+          prerelease: true
+          make_latest: false
+          target_commitish: ${{ github.sha }}
           files: |
             new_openstack_host_setup.sh
           token: ${{ secrets.GITHUB_TOKEN }}
