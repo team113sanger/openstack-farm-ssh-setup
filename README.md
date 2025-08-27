@@ -5,6 +5,14 @@ Convenience scripts for Team113 users to run on their laptop to configure SSH fo
 
 Automated VM onboarding helper that sets up SSH access, registers SSH keys with GitHub/GitLab, and optionally configures dotfiles and development environments.
 
+### What it does
+
+1. Adds SSH config alias for the new VM
+2. Creates SSH keypair on the VM if missing
+3. Registers the VM's public key with GitHub and GitLab APIs
+4. Optionally sets up dotfiles with dotbot (if GitHub registration succeeds)
+5. Optionally installs R (via rig) and Python (via pyenv) versions from JSON config
+
 ### Quick Start (Recommended)
 
 Download and run from GitHub releases:
@@ -58,13 +66,6 @@ curl -L https://github.com/team113sanger/openstack-farm-ssh-setup/releases/lates
 ./new_openstack_host_setup.sh <NEW-IP> <NEW-HOST-ALIAS> --dotfiles git@github.com:user/dotfiles.git
 ```
 
-### What it does
-
-1. Adds SSH config alias for the new VM
-2. Creates SSH keypair on the VM if missing
-3. Registers the VM's public key with GitHub and GitLab APIs
-4. Optionally sets up dotfiles with dotbot (if GitHub registration succeeds)
-5. Optionally installs R (via rig) and Python (via pyenv) versions from JSON config
 
 ### Requirements
 
