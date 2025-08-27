@@ -7,13 +7,13 @@ set -euo pipefail
 # Optionally set up dotfiles with dotbot if GitHub registration succeeds.
 # Optionally install R (via rig) and Python (via pyenv) versions from JSON config.
 #
-# Usage: ./setup_new_host.sh [--dotfiles <github-uri>] <NEW-IP> <NEW-HOST-ALIAS>
-# Example: ./setup_new_host.sh 172.27.21.59 iv3-dev-4
-# Example: ./setup_new_host.sh --dotfiles https://github.com/user/dotfiles 172.27.21.59 iv3-dev-4
+# Usage: ./new_openstack_host_setup.sh [--dotfiles <github-uri>] <NEW-IP> <NEW-HOST-ALIAS>
+# Example: ./new_openstack_host_setup.sh 172.27.21.59 iv3-dev-4
+# Example: ./new_openstack_host_setup.sh --dotfiles https://github.com/user/dotfiles 172.27.21.59 iv3-dev-4
 # =============================================================================
 
 # ---- Constants ----------------------------------------------------------------
-VERSION="0.5.0"
+VERSION="0.1.0"
 GITHUB_API="https://api.github.com"
 GITHUB_TOKEN_URL="https://github.com/settings/tokens"
 GITLAB_HOST="gitlab.internal.sanger.ac.uk"
@@ -49,29 +49,27 @@ print_warning()   { echo -e "${format_yellow}WARNING: $*${format_off}" >&2; }
 print_error()     { echo -e "${format_red}ERROR: $*${format_off}" >&2; }
 
 print_usage() {
-  echo "Usage: $0 [--dotfiles <github-uri>] <NEW-IP> <NEW-HOST-ALIAS>" >&2
-  echo "" >&2
-  echo "Adds an SSH config alias, ensures the VM at <NEW-IP> has an id_rsa keypair," >&2
-  echo "and registers its public key with GitHub/GitLab via API." >&2
-  echo "Optionally sets up dotfiles with dotbot if GitHub registration succeeds." >&2
-  echo "Optionally installs R (via rig) and Python (via pyenv) versions from JSON config." >&2
-  echo "" >&2
-  echo "Options:" >&2
-  echo "  -h, --help        Show this help message and exit" >&2
-  echo "  --dotfiles <uri>  SSH URI of dotfiles repository (git@host:user/repo.git)" >&2
-  echo "" >&2
-  echo "Arguments:" >&2
-  echo "  <NEW-IP>          IPv4 address of the new VM (e.g., 172.27.21.59)" >&2
-  echo "  <NEW-HOST-ALIAS>  SSH alias for the VM (e.g., iv3-dev-4)" >&2
-  echo "                    Underscores will be converted to hyphens" >&2
-  echo "" >&2
-  echo "Examples:" >&2
-  echo "  $0 172.27.21.59 iv3-dev-4" >&2
-  echo "  $0 --dotfiles git@github.com:user/dotfiles.git 172.27.21.59 iv3-dev-4" >&2
-  echo "  $0 172.27.21.59 iv3_dev_4  # Converts to iv3-dev-4" >&2
-  echo "" >&2
-  echo "Quick install via curl:" >&2
-  echo "  curl -L https://github.com/team113sanger/openstack-farm-ssh-setup/releases/latest/download/new_openstack_host_setup.sh | bash -s -- 172.27.21.59 iv3-dev-4" >&2
+  echo "Usage: $0 [--dotfiles <github-uri>] <NEW-IP> <NEW-HOST-ALIAS>"
+  echo ""
+  echo "Adds an SSH config alias, ensures the VM at <NEW-IP> has an id_rsa keypair,"
+  echo "and registers its public key with GitHub/GitLab via API."
+  echo "Optionally sets up dotfiles with dotbot if GitHub registration succeeds."
+  echo "Optionally installs R (via rig) and Python (via pyenv) versions from JSON config."
+  echo ""
+  echo "Options:"
+  echo "  -h, --help        Show this help message and exit"
+  echo "  --dotfiles <uri>  SSH URI of dotfiles repository (git@host:user/repo.git)"
+  echo ""
+  echo "Arguments:"
+  echo "  <NEW-IP>          IPv4 address of the new VM (e.g., 172.27.21.59)"
+  echo "  <NEW-HOST-ALIAS>  SSH alias for the VM (e.g., iv3-dev-4)"
+  echo "                    Underscores will be converted to hyphens"
+  echo ""
+  echo "Examples:"
+  echo "  $0 172.27.21.59 iv3-dev-4"
+  echo "  $0 --dotfiles git@github.com:user/dotfiles.git 172.27.21.59 iv3-dev-4"
+  echo "  $0 172.27.21.59 iv3_dev_4  # Converts to iv3-dev-4"
+  echo ""
 }
 
 # ---- Helpers ------------------------------------------------------------------
