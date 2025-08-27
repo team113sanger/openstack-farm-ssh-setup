@@ -11,7 +11,7 @@ Download and run from GitHub releases:
 
 ```bash
 # Download latest stable release
-curl -O https://github.com/team113sanger/openstack-farm-ssh-setup/releases/latest/download/new_openstack_host_setup.sh
+curl -LO https://github.com/team113sanger/openstack-farm-ssh-setup/releases/latest/download/new_openstack_host_setup.sh
 chmod +x new_openstack_host_setup.sh
 
 # Run with interactive prompts
