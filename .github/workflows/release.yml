@@ -1,24 +1,34 @@
-name: Release
 on:
   push:
-    branches: [main]
-    tags: ['[0-9]+\\.[0-9]+\\.[0-9]+.*']  # semver tags
-permissions:
-  contents: write
+    tags: ['*.*.*']
+  release:
+    types: [published]
 
 jobs:
-  release:
+  release-on-push:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    permissions: { contents: write }
     steps:
       - uses: actions/checkout@v4
-      # Create a GitHub Release for version tags
-      - name: Create Tagged Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v1
+        with: { fetch-depth: 0 }
+      - uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
         with:
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
-          body: Release ${{ github.ref_name }}
-          prerelease: false
           files: new_openstack_host_setup.sh
-          token: ${{ secrets.GITHUB_TOKEN }}
+          fail_on_unmatched_files: true
+
+  release-on-ui:
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.release.tag_name }}
+          files: new_openstack_host_setup.sh
+          fail_on_unmatched_files: true
