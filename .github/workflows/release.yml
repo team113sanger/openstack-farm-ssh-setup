@@ -28,7 +28,6 @@ jobs:
           name: Release ${{ github.ref_name }}
           body: Release ${{ github.ref_name }}
           prerelease: false
-          make_latest: true
           files: |
             new_openstack_host_setup.sh
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -41,7 +40,6 @@ jobs:
           name: Canary Build
           body: Latest development build from commit ${{ github.sha }}
           prerelease: true
-          make_latest: false
           target_commitish: ${{ github.sha }}
           files: |
             new_openstack_host_setup.sh
