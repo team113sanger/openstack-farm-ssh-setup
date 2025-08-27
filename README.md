@@ -5,20 +5,57 @@ Convenience scripts for Team113 users to run on their laptop to configure SSH fo
 
 Automated VM onboarding helper that sets up SSH access, registers SSH keys with GitHub/GitLab, and optionally configures dotfiles and development environments.
 
-### Usage
+### Quick Start (Recommended)
+
+Download and run from GitHub releases:
 
 ```bash
-./new_openstack_host_setup.sh <NEW-IP> <NEW-HOST-ALIAS> [--dotfiles <github-uri>] 
-```
+# Download latest stable release
+curl -O https://github.com/team113sanger/openstack-farm-ssh-setup/releases/latest/download/new_openstack_host_setup.sh
+chmod +x new_openstack_host_setup.sh
 
-### Examples
-
-```bash
-# Basic setup
+# Run with interactive prompts
 ./new_openstack_host_setup.sh 172.27.21.59 iv3-dev-4
 
-# With dotfiles
-./new_openstack_host_setup.sh 172.27.21.59 iv3-dev-4 --dotfiles https://github.com/user/dotfiles
+# Or with dotfiles pre-specified (skips interactive prompt)
+./new_openstack_host_setup.sh 172.27.21.59 iv3-dev-4 --dotfiles git@github.com:user/dotfiles.git
+```
+
+### Download Other Versions
+
+```bash
+# Bleeding edge (canary from main branch)
+curl -O https://github.com/team113sanger/openstack-farm-ssh-setup/releases/download/canary/new_openstack_host_setup.sh
+
+# Specific version
+curl -O https://github.com/team113sanger/openstack-farm-ssh-setup/releases/download/0.5.0/new_openstack_host_setup.sh
+```
+
+### Non-Interactive Usage (Advanced)
+
+For automation where you want to skip all interactive prompts:
+
+```bash
+# Set environment variables to skip prompts
+export GITHUB_PAT="your_github_token"
+export GITLAB_PAT="your_gitlab_token" 
+export REMOTE_SSH_USER="ubuntu"
+
+# Run non-interactively
+curl -L https://github.com/team113sanger/openstack-farm-ssh-setup/releases/latest/download/new_openstack_host_setup.sh | bash -s -- 172.27.21.59 iv3-dev-4 --dotfiles git@github.com:user/dotfiles.git
+```
+
+### Command Line Options
+
+```bash
+# Show help
+./new_openstack_host_setup.sh --help
+
+# Basic usage
+./new_openstack_host_setup.sh <NEW-IP> <NEW-HOST-ALIAS>
+
+# With dotfiles (SSH URI format required)
+./new_openstack_host_setup.sh <NEW-IP> <NEW-HOST-ALIAS> --dotfiles git@github.com:user/dotfiles.git
 ```
 
 ### What it does

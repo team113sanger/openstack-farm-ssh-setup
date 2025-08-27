@@ -57,34 +57,106 @@ print_usage() {
   echo "Optionally installs R (via rig) and Python (via pyenv) versions from JSON config." >&2
   echo "" >&2
   echo "Options:" >&2
-  echo "  --dotfiles <uri>  GitHub URI of dotfiles repository (optional)" >&2
+  echo "  -h, --help        Show this help message and exit" >&2
+  echo "  --dotfiles <uri>  SSH URI of dotfiles repository (git@host:user/repo.git)" >&2
+  echo "" >&2
+  echo "Arguments:" >&2
+  echo "  <NEW-IP>          IPv4 address of the new VM (e.g., 172.27.21.59)" >&2
+  echo "  <NEW-HOST-ALIAS>  SSH alias for the VM (e.g., iv3-dev-4)" >&2
+  echo "                    Underscores will be converted to hyphens" >&2
   echo "" >&2
   echo "Examples:" >&2
   echo "  $0 172.27.21.59 iv3-dev-4" >&2
-  echo "  $0 --dotfiles https://github.com/user/dotfiles 172.27.21.59 iv3-dev-4" >&2
+  echo "  $0 --dotfiles git@github.com:user/dotfiles.git 172.27.21.59 iv3-dev-4" >&2
+  echo "  $0 172.27.21.59 iv3_dev_4  # Converts to iv3-dev-4" >&2
+  echo "" >&2
+  echo "Quick install via curl:" >&2
+  echo "  curl -L https://github.com/team113sanger/openstack-farm-ssh-setup/releases/latest/download/new_openstack_host_setup.sh | bash -s -- 172.27.21.59 iv3-dev-4" >&2
 }
 
 # ---- Helpers ------------------------------------------------------------------
-with_secrets_silenced() {
-  # Run a command with xtrace disabled, then restore if it was on.
-  local was_xtrace=0
-  [[ $- == *x* ]] && was_xtrace=1
-  set +x
-  "$@"
-  (( was_xtrace )) && set -x
+validate_ip_address() {
+  local ip="$1"
+  
+  # Check basic format: four dot-separated numbers
+  if [[ ! "$ip" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+    return 1
+  fi
+  
+  # Check each octet is between 0-255
+  local IFS='.'
+  local octets=($ip)
+  for octet in "${octets[@]}"; do
+    if (( octet > 255 )); then
+      return 1
+    fi
+  done
+  
+  return 0
+}
+
+normalize_hostname() {
+  local hostname="$1"
+  
+  # Convert underscores to hyphens
+  hostname="${hostname//_/-}"
+  
+  # Validate hostname: alphanumeric, hyphens, and dots only
+  if [[ ! "$hostname" =~ ^[a-zA-Z0-9.-]+$ ]]; then
+    print_error "Invalid hostname '$hostname'. Only alphanumeric characters, hyphens, and dots are allowed."
+    return 1
+  fi
+  
+  # Check it's not empty
+  if [[ -z "$hostname" ]]; then
+    print_error "Hostname cannot be empty."
+    return 1
+  fi
+  
+  echo "$hostname"
+}
+
+validate_dotfiles_uri() {
+  local uri="$1"
+  
+  # Check for SSH format: git@github.com:user/repo.git or git@gitlab.host:user/repo.git
+  if [[ "$uri" =~ ^git@[a-zA-Z0-9.-]+:[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+\.git$ ]]; then
+    return 0
+  fi
+  
+  # Also accept without .git suffix
+  if [[ "$uri" =~ ^git@[a-zA-Z0-9.-]+:[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+$ ]]; then
+    return 0
+  fi
+  
+  return 1
 }
 
 # ---- Arg parsing ---------------------------------------------------------------
 parse_args() {
-  # Handle optional --dotfiles argument
+  # Handle options first
   while [[ $# -gt 0 ]]; do
     case "$1" in
+      -h|--help)
+        print_usage
+        exit 0
+        ;;
       --dotfiles)
         if [[ -n "$2" ]] && [[ ! "$2" =~ ^-- ]]; then
+          if ! validate_dotfiles_uri "$2"; then
+            print_error "Invalid dotfiles URI format: '$2'"
+            print_error "Expected SSH format: git@github.com:user/repo.git or git@gitlab.host:user/repo.git"
+            print_error "Examples:"
+            print_error "  git@github.com:user/dotfiles.git"
+            print_error "  git@gitlab.internal.sanger.ac.uk:user/dotfiles.git"
+            exit 1
+          fi
           DOTFILES_URI="$2"
           shift 2
         else
-          shift 1
+          print_error "Option --dotfiles requires a GitHub/GitLab SSH URI argument."
+          print_usage
+          exit 1
         fi
         ;;
       -*)
@@ -98,13 +170,32 @@ parse_args() {
     esac
   done
   
+  # Check for required positional arguments
   if [[ $# -lt 2 ]]; then
-    print_error "Missing arguments."
+    print_error "Missing required arguments: <NEW-IP> and <NEW-HOST-ALIAS>"
     print_usage
     exit 1
   fi
+  
+  # Validate and assign IP address
   NEW_IP="$1"
-  NEW_ALIAS="$2"
+  if ! validate_ip_address "$NEW_IP"; then
+    print_error "Invalid IP address format: '$NEW_IP'"
+    print_error "Expected format: xxx.xxx.xxx.xxx (e.g., 172.27.21.59)"
+    exit 1
+  fi
+  
+  # Normalize and validate hostname
+  local raw_alias="$2"
+  if ! NEW_ALIAS="$(normalize_hostname "$raw_alias")"; then
+    print_error "Failed to normalize hostname: '$raw_alias'"
+    exit 1
+  fi
+  
+  # Show normalization if it occurred
+  if [[ "$raw_alias" != "$NEW_ALIAS" ]]; then
+    print_info "Normalized hostname: '$raw_alias' → '$NEW_ALIAS'"
+  fi
 
   if [[ -z "${REMOTE_SSH_USER:-}" ]]; then
     read -r -p "Remote SSH username for ${NEW_ALIAS} (${NEW_IP}) [default: ubuntu]: " REMOTE_SSH_USER
@@ -351,10 +442,20 @@ prompt_for_dotfiles() {
   read -r -p "Would you like to set up your dotfiles on ${NEW_ALIAS}? [y/N]: " response
   case "${response}" in
     [yY][eE][sS]|[yY])
-      read -r -p "Enter your dotfiles GitHub repository URI: " DOTFILES_URI
-      if [[ -z "${DOTFILES_URI}" ]]; then
-        print_info "No URI provided, skipping dotfiles setup."
-      fi
+      while true; do
+        read -r -p "Enter your dotfiles repository SSH URI (git@host:user/repo.git): " DOTFILES_URI
+        if [[ -z "${DOTFILES_URI}" ]]; then
+          print_info "No URI provided, skipping dotfiles setup."
+          break
+        elif validate_dotfiles_uri "${DOTFILES_URI}"; then
+          break
+        else
+          print_error "Invalid SSH URI format. Examples:"
+          print_error "  git@github.com:user/dotfiles.git"
+          print_error "  git@gitlab.internal.sanger.ac.uk:user/dotfiles.git"
+          echo "Press Enter to skip or try again:" >&2
+        fi
+      done
       ;;
     *)
       print_info "Skipping dotfiles setup."
