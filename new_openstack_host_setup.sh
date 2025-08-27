@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # =============================================================================
-# VM onboarding helper: add SSH config alias, mint remote id_rsa if missing,
+# OpenStack instance onboarding helper: add SSH config alias, mint remote id_rsa if missing,
 # register the public key with GitHub and GitLab via their APIs.
 # Optionally set up dotfiles with dotbot if GitHub registration succeeds.
 # Optionally install R (via rig) and Python (via pyenv) versions from JSON config.
@@ -19,6 +19,8 @@ GITHUB_TOKEN_URL="https://github.com/settings/tokens"
 GITLAB_HOST="gitlab.internal.sanger.ac.uk"
 GITLAB_API="https://${GITLAB_HOST}/api/v4"
 GITLAB_TOKEN_URL="https://${GITLAB_HOST}/-/user_settings/personal_access_tokens"
+DEFAULT_REMOTE_SSH_USER="ubuntu"
+REMOTE_SSH_USER=""
 
 SSH_DIR="${HOME}/.ssh"
 SSH_CONFIG="${SSH_DIR}/config"
@@ -51,18 +53,19 @@ print_error()     { echo -e "${format_red}ERROR: $*${format_off}" >&2; }
 print_usage() {
   echo "Usage: $0 [--dotfiles <github-uri>] <NEW-IP> <NEW-HOST-ALIAS>"
   echo ""
-  echo "Adds an SSH config alias, ensures the VM at <NEW-IP> has an id_rsa keypair,"
+  echo "Adds an SSH config alias, ensures the OpenStack instance at <NEW-IP> has an id_rsa keypair,"
   echo "and registers its public key with GitHub/GitLab via API."
   echo "Optionally sets up dotfiles with dotbot if GitHub registration succeeds."
   echo "Optionally installs R (via rig) and Python (via pyenv) versions from JSON config."
   echo ""
   echo "Options:"
-  echo "  -h, --help        Show this help message and exit"
-  echo "  --dotfiles <uri>  SSH URI of dotfiles repository (git@host:user/repo.git)"
+  echo "  -h, --help            Show this help message and exit"
+  echo "  --dotfiles <uri>      SSH URI of dotfiles repository (git@host:user/repo.git)"
+  echo "  --remote-user <user>  SSH username for the OpenStack instance (default: ${DEFAULT_REMOTE_SSH_USER})"
   echo ""
   echo "Arguments:"
-  echo "  <NEW-IP>          IPv4 address of the new VM (e.g., 172.27.21.59)"
-  echo "  <NEW-HOST-ALIAS>  SSH alias for the VM (e.g., iv3-dev-4)"
+  echo "  <NEW-IP>          IPv4 address of the new OpenStack instance (e.g., 172.27.21.59)"
+  echo "  <NEW-HOST-ALIAS>  SSH alias for the OpenStack instance (e.g., iv3-dev-4)"
   echo "                    Underscores will be converted to hyphens"
   echo ""
   echo "Examples:"
@@ -157,6 +160,16 @@ parse_args() {
           exit 1
         fi
         ;;
+      --remote-user)
+        if [[ -n "$2" ]] && [[ ! "$2" =~ ^-- ]]; then
+          REMOTE_SSH_USER="$2"
+          shift 2
+        else
+          print_error "Option --remote-user requires a username argument."
+          print_usage
+          exit 1
+        fi
+        ;;
       -*)
         print_error "Unknown option: $1"
         print_usage
@@ -196,8 +209,7 @@ parse_args() {
   fi
 
   if [[ -z "${REMOTE_SSH_USER:-}" ]]; then
-    read -r -p "Remote SSH username for ${NEW_ALIAS} (${NEW_IP}) [default: ubuntu]: " REMOTE_SSH_USER
-    REMOTE_SSH_USER="${REMOTE_SSH_USER:-ubuntu}"
+    REMOTE_SSH_USER="${DEFAULT_REMOTE_SSH_USER}"
   fi
 
   print_info "Target: ${REMOTE_SSH_USER}@${NEW_IP} (alias: ${NEW_ALIAS})"
@@ -272,7 +284,7 @@ preseed_known_hosts() {
   fi
 }
 
-# ---- Remote operations (run on the VM) ----------------------------------------
+# ---- Remote operations (run on the OpenStack instance) ----------------------------------------
 remote_ensure_keypair() {
   print_info "Ensuring remote id_rsa keypair exists on ${NEW_ALIAS}..."
   ssh -o BatchMode=yes -o ConnectTimeout=10 "${REMOTE_SSH_USER}@${NEW_IP}" bash -s <<'EOF'
@@ -305,9 +317,10 @@ ensure_github_token() {
 
   print_warning "GITHUB_PAT not set."
   print_post_script "Create a ${format_yellow}Personal access token (classic)${format_blue} with:"
-  print_post_script "  • ${format_yellow}Scope:${format_off} write:public_key"
+  print_post_script "  • ${format_yellow}Type:${format_off} classic"
+  print_post_script "  • ${format_yellow}Scope:${format_off} admin:public_key"
   print_post_script "  • ${format_yellow}Expiration:${format_off} 7 days"
-  print_post_script "  • ${format_yellow}Note/name:${format_off} 'VM key upload (temporary)'"
+  print_post_script "  • ${format_yellow}Note/name:${format_off} 'OpenStack instance key upload (temporary)'"
   print_post_script "Open: ${format_yellow}${GITHUB_TOKEN_URL}${format_blue}"
   if command -v xdg-open >/dev/null 2>&1; then xdg-open "${GITHUB_TOKEN_URL}" >/dev/null 2>&1 || true
   elif command -v open >/dev/null 2>&1; then open "${GITHUB_TOKEN_URL}" >/dev/null 2>&1 || true
@@ -315,7 +328,7 @@ ensure_github_token() {
   fi
 
   echo >&2
-  read -r -p "Paste new GitHub token (classic, write:public_key, 7-day): " GITHUB_PAT
+  read -r -p "Paste new GitHub token (classic, admin:public_key, 7-day): " GITHUB_PAT
   echo >&2
   [[ -n "${GITHUB_PAT}" ]] || { print_info "Skipping GitHub key registration (no token provided)."; return 0; }
 
@@ -340,7 +353,7 @@ ensure_gitlab_token() {
   print_post_script "Create a token on ${format_yellow}${GITLAB_HOST}${format_blue} with:"
   print_post_script "  • ${format_yellow}Scope:${format_off} api"
   print_post_script "  • ${format_yellow}Expiration:${format_off} 7 days"
-  print_post_script "  • ${format_yellow}Name:${format_off} 'VM key upload (temporary)'"
+  print_post_script "  • ${format_yellow}Name:${format_off} 'OpenStack instance key upload (temporary)'"
   print_post_script "Open: ${format_yellow}${GITLAB_TOKEN_URL}${format_blue}"
   if command -v xdg-open >/dev/null 2>&1; then xdg-open "${GITLAB_TOKEN_URL}" >/dev/null 2>&1 || true
   elif command -v open >/dev/null 2>&1; then open "${GITLAB_TOKEN_URL}" >/dev/null 2>&1 || true
@@ -415,10 +428,14 @@ register_key_gitlab() {
   esac
 }
 
-# ---- Smoke tests (run on the VM) ----------------------------------------------
+# ---- Smoke tests (run on the OpenStack instance) ----------------------------------------------
 remote_git_ssh_sanity() {
+  print_info "Waiting for GitHub to finish processing the new key..."
+  sleep 2 # Brief pause to allow GitHub to process the new key
   print_info "Running remote SSH smoke tests for GitHub (this may return nonzero but is informative)..."
   ssh -o BatchMode=yes "${REMOTE_SSH_USER}@${NEW_IP}" 'ssh -T -o StrictHostKeyChecking=accept-new git@github.com || true' || true
+  print_info "Waiting for GitLab to finish processing the new key..."
+  sleep 2 # Takes a few seconds for the GitLab server to propogate the new key
   print_info "Running remote SSH smoke tests for GitLab (this may return nonzero but is informative)..."
   ssh -o BatchMode=yes "${REMOTE_SSH_USER}@${NEW_IP}" "ssh -T -o StrictHostKeyChecking=accept-new git@${GITLAB_HOST} || true" || true
 }
@@ -471,7 +488,7 @@ prompt_for_r_python() {
       local index_url="https://t113admin-openstack.cog.sanger.ac.uk/ansible/installs/index.html"
       print_info "Opening browser to configuration files index..."
       print_info "${format_yellow}${index_url}${format_off}"
-      print_info "Browse to find your old VM configuration and copy the 'All Programs' JSON URL"
+      print_info "Browse to find your old OpenStack instance configuration and copy the 'All Programs' JSON URL"
       
       # Try to open browser
       if command -v xdg-open >/dev/null 2>&1; then xdg-open "${index_url}" >/dev/null 2>&1 || true
@@ -479,7 +496,7 @@ prompt_for_r_python() {
       elif command -v start >/dev/null 2>&1; then start "" "${index_url}" >/dev/null 2>&1 || true
       fi
       
-      read -r -p "Paste the 'All Programs' JSON URL for your VM (or press Enter to skip): " VERSIONS_JSON_URL
+      read -r -p "Paste the 'All Programs' JSON URL for your OpenStack instance (or press Enter to skip): " VERSIONS_JSON_URL
       if [[ -z "${VERSIONS_JSON_URL}" ]]; then
         print_info "No JSON URL provided, skipping R/Python installation."
         INSTALL_R_PYTHON=0
@@ -503,7 +520,7 @@ remote_install_dotfiles() {
   
   print_info "Installing dotfiles from ${DOTFILES_URI} on ${NEW_ALIAS}..."
   
-  # Run the dotfiles installation on the remote VM
+  # Run the dotfiles installation on the remote OpenStack instance
   ssh -o BatchMode=yes "${REMOTE_SSH_USER}@${NEW_IP}" bash -s <<EOF
 set -euo pipefail
 
@@ -561,7 +578,7 @@ remote_install_r_versions() {
     return 0
   fi
   
-  # Install R versions on remote VM
+  # Install R versions on remote OpenStack instance
   ssh -o BatchMode=yes "${REMOTE_SSH_USER}@${NEW_IP}" bash -s <<EOF
 set -euo pipefail
 
@@ -613,7 +630,7 @@ remote_install_python_versions() {
     return 0
   fi
   
-  # Install Python versions on remote VM
+  # Install Python versions on remote OpenStack instance
   ssh -o BatchMode=yes "${REMOTE_SSH_USER}@${NEW_IP}" bash -s <<EOF
 set -euo pipefail
 
