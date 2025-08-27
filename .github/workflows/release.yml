@@ -32,15 +32,21 @@ jobs:
             new_openstack_host_setup.sh
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create/Update Canary Release
+      - name: Delete existing canary release
         if: github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: canary
-          name: Canary Build
-          body: Latest development build from commit ${{ github.sha }}
-          prerelease: true
-          target_commitish: ${{ github.sha }}
-          files: |
+        run: |
+          gh release delete canary --yes || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Canary Release
+        if: github.ref == 'refs/heads/main'
+        run: |
+          gh release create canary \
+            --title "Canary Build" \
+            --notes "Latest development build from commit ${{ github.sha }}" \
+            --prerelease \
+            --target ${{ github.sha }} \
             new_openstack_host_setup.sh
-          token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
