@@ -1,17 +1,22 @@
+name: Release
+
 on:
   push:
     tags: ['*.*.*']
   release:
     types: [published]
 
+permissions:
+  contents: write
+
 jobs:
   release-on-push:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    permissions: { contents: write }
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
       - uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
         with:
@@ -21,7 +26,6 @@ jobs:
   release-on-ui:
     if: github.event_name == 'release'
     runs-on: ubuntu-latest
-    permissions: { contents: write }
     steps:
       - uses: actions/checkout@v4
         with:
