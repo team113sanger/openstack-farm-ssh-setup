@@ -13,7 +13,7 @@ set -euo pipefail
 # =============================================================================
 
 # ---- Constants ----------------------------------------------------------------
-VERSION="0.1.1"
+VERSION="0.1.2"
 GITHUB_API="https://api.github.com"
 GITHUB_TOKEN_URL="https://github.com/settings/tokens"
 GITLAB_HOST="gitlab.internal.sanger.ac.uk"
@@ -62,6 +62,7 @@ print_usage() {
   echo "  -h, --help            Show this help message and exit"
   echo "  --dotfiles <uri>      SSH URI of dotfiles repository (git@host:user/repo.git)"
   echo "  --remote-user <user>  SSH username for the OpenStack instance (default: ${DEFAULT_REMOTE_SSH_USER})"
+  echo "  --version             Show script version and exit"
   echo ""
   echo "Arguments:"
   echo "  <NEW-IP>          IPv4 address of the new OpenStack instance (e.g., 172.27.21.59)"
@@ -138,6 +139,10 @@ parse_args() {
   # Handle options first
   while [[ $# -gt 0 ]]; do
     case "$1" in
+      --version)
+        echo "$0 version ${VERSION}"
+        exit 0
+        ;;
       -h|--help)
         print_usage
         exit 0
