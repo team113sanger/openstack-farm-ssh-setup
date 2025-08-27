@@ -65,11 +65,3 @@ curl -L https://github.com/team113sanger/openstack-farm-ssh-setup/releases/lates
 # With dotfiles (SSH URI format required)
 ./new_openstack_host_setup.sh <NEW-IP> <NEW-HOST-ALIAS> --dotfiles git@github.com:user/dotfiles.git
 ```
-
-
-### Requirements
-
-- `ssh`, `ssh-keyscan`, `curl`, `jq`
-- GitHub Personal Access Token (classic, `write:public_key` scope)
-- GitLab Personal Access Token (`api` scope)
-
