@@ -582,6 +582,9 @@ if [[ -f "\${HOME}/\$DOTFILES_DIR/install.conf.yaml" ]]; then
   if [[ -x "./dotbot/bin/dotbot" ]]; then
     ./dotbot/bin/dotbot -c install.conf.yaml || {
       echo "WARNING: dotbot execution failed, but continuing." >&2
+      echo "WARNING: Common issues include:"
+      echo "WARNING:   • Software installations created .bashrc and .profile files. "
+      echo "WARNING:     You will need inspect, diff and merge them manually."
     }
   else
     echo "WARNING: dotbot executable not found at ./dotbot/bin/dotbot" >&2
